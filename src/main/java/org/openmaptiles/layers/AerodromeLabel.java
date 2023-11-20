@@ -35,7 +35,6 @@ See https://github.com/openmaptiles/openmaptiles/blob/master/LICENSE.md for deta
  */
 package org.openmaptiles.layers;
 
-import static org.openmaptiles.util.Utils.nullIfEmpty;
 import static org.openmaptiles.util.Utils.nullOrEmpty;
 
 import com.onthegomap.planetiler.FeatureCollector;
@@ -46,7 +45,6 @@ import com.onthegomap.planetiler.util.Translations;
 import org.openmaptiles.generated.OpenMapTilesSchema;
 import org.openmaptiles.generated.Tables;
 import org.openmaptiles.util.OmtLanguageUtils;
-import org.openmaptiles.util.Utils;
 
 /**
  * Defines the logic for generating map elements in the {@code aerodrome_label} layer from source features.
@@ -75,9 +73,6 @@ public class AerodromeLabel implements
       .setBufferPixels(BUFFER_SIZE)
       .setMinZoom(important ? 8 : 10)
       .putAttrs(OmtLanguageUtils.getNames(element.source().tags(), translations))
-      .putAttrs(Utils.elevationTags(element.ele()))
-      .setAttr(Fields.IATA, nullIfEmpty(element.iata()))
-      .setAttr(Fields.ICAO, nullIfEmpty(element.icao()))
       .setAttr(Fields.CLASS, clazz);
   }
 }

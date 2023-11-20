@@ -45,7 +45,6 @@ import com.onthegomap.planetiler.reader.SourceFeature;
 import com.onthegomap.planetiler.stats.Stats;
 import com.onthegomap.planetiler.util.Translations;
 import com.onthegomap.planetiler.util.ZoomFunction;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -112,7 +111,6 @@ public class Landcover implements
       if (clazz != null) {
         features.polygon(LAYER_NAME).setBufferPixels(BUFFER_SIZE)
           .setAttr(Fields.CLASS, clazz)
-          .setAttr(Fields.SUBCLASS, info.subclass)
           .setZoomRange(info.minzoom, info.maxzoom);
       }
     }
@@ -124,62 +122,18 @@ public class Landcover implements
     String clazz = getClassFromSubclass(subclass);
     if (clazz != null) {
       features.polygon(LAYER_NAME).setBufferPixels(BUFFER_SIZE)
-        .setMinPixelSizeOverrides(MIN_PIXEL_SIZE_THRESHOLDS)
+        // .setMinPixelSizeOverrides(MIN_PIXEL_SIZE_THRESHOLDS)
+        .setMinPixelSize(0.1)
         // default is 0.1, this helps reduce size of some heavy z7-10 tiles
-        .setPixelToleranceBelowZoom(10, 0.25)
+        .setPixelToleranceBelowZoom(12, 0.25)
         .setAttr(Fields.CLASS, clazz)
-        .setAttr(Fields.SUBCLASS, subclass)
-        .setNumPointsAttr(TEMP_NUM_POINTS_ATTR)
-        .setMinZoom(7);
+        .setMinZoom(0);
     }
   }
 
   @Override
   public List<VectorTile.Feature> postProcess(int zoom, List<VectorTile.Feature> items) throws GeometryException {
-    if (zoom < 7 || zoom > 13) {
-      for (var item : items) {
-        item.attrs().remove(TEMP_NUM_POINTS_ATTR);
-      }
-      return items;
-    } else { // z7-13
-      // merging only merges polygons with the same attributes, so use this temporary key
-      // to separate features into layers that will be merged separately
-      String tempGroupKey = "_group";
-      List<VectorTile.Feature> result = new ArrayList<>();
-      List<VectorTile.Feature> toMerge = new ArrayList<>();
-      for (var item : items) {
-        Map<String, Object> attrs = item.attrs();
-        Object numPointsObj = attrs.remove(TEMP_NUM_POINTS_ATTR);
-        Object subclassObj = attrs.get(Fields.SUBCLASS);
-        if (numPointsObj instanceof Number num && subclassObj instanceof String subclass) {
-          long numPoints = num.longValue();
-          if (zoom >= 10) {
-            if (WOOD_OR_FOREST.contains(subclass) && numPoints < 300) {
-              attrs.put(tempGroupKey, "<300");
-              toMerge.add(item);
-            } else { // don't merge
-              result.add(item);
-            }
-          } else if (zoom >= 8 && zoom <= 9) {
-            if (WOOD_OR_FOREST.contains(subclass)) {
-              attrs.put(tempGroupKey, numPoints < 300 ? "<300" : ">300");
-              toMerge.add(item);
-            } else { // don't merge
-              result.add(item);
-            }
-          } else { // zoom 7
-            toMerge.add(item);
-          }
-        } else {
-          result.add(item);
-        }
-      }
-      var merged = FeatureMerge.mergeOverlappingPolygons(toMerge, 4);
-      for (var item : merged) {
-        item.attrs().remove(tempGroupKey);
-      }
-      result.addAll(merged);
-      return result;
-    }
+    var minArea = zoom <= 10 ? 64 : 64 / Math.pow(2, zoom - 10);
+    return FeatureMerge.mergeNearbyPolygons(items, minArea, minArea, 0.5, 0.25);
   }
 }

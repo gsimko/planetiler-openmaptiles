@@ -51,8 +51,8 @@ public class Utils {
   /** Returns a map with {@code ele} (meters) and {ele_ft} attributes from an elevation in meters. */
   public static Map<String, Object> elevationTags(double meters) {
     return Map.of(
-      "ele", (int) Math.round(meters),
-      "ele_ft", (int) Math.round(meters * 3.2808399)
+      "ele", (int) Math.round(meters)
+    // "ele_ft", (int) Math.round(meters * 3.2808399)
     );
   }
 

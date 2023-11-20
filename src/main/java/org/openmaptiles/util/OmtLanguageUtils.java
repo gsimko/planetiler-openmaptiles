@@ -95,21 +95,21 @@ public class OmtLanguageUtils {
       nonLatin = null;
     }
 
-    putIfNotEmpty(result, "name", name);
-    putIfNotEmpty(result, "name_en", coalesce(nameEn, name));
-    putIfNotEmpty(result, "name_de", coalesce(nameDe, name, nameEn));
+    // putIfNotEmpty(result, "name", name);
+    // putIfNotEmpty(result, "name_en", coalesce(nameEn, name));
+    // putIfNotEmpty(result, "name_de", coalesce(nameDe, name, nameEn));
     putIfNotEmpty(result, "name:latin", latin);
     putIfNotEmpty(result, "name:nonlatin", nonLatin);
-    putIfNotEmpty(result, "name_int", coalesce(
-      intName,
-      nameEn,
-      latin,
-      name
-    ));
+    // putIfNotEmpty(result, "name_int", coalesce(
+    //   intName,
+    //   nameEn,
+    //   latin,
+    //   name
+    // ));
 
-    if (translations != null) {
-      translations.addTranslations(result, tags);
-    }
+    // if (translations != null) {
+    //   translations.addTranslations(result, tags);
+    // }
 
     return result;
   }

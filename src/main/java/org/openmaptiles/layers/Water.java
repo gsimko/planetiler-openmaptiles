@@ -49,7 +49,6 @@ import java.util.List;
 import org.openmaptiles.OpenMapTilesProfile;
 import org.openmaptiles.generated.OpenMapTilesSchema;
 import org.openmaptiles.generated.Tables;
-import org.openmaptiles.util.Utils;
 
 /**
  * Defines the logic for generating map elements for oceans and lakes in the {@code water} layer from source features.
@@ -97,6 +96,7 @@ public class Water implements
       features.polygon(LAYER_NAME)
         .setBufferPixels(BUFFER_SIZE)
         .setZoomRange(info.minZoom, info.maxZoom)
+        .setPixelToleranceBelowZoom(10, 0.25)
         .setAttr(Fields.CLASS, info.clazz);
     }
   }
@@ -106,26 +106,28 @@ public class Water implements
     features.polygon(LAYER_NAME)
       .setBufferPixels(BUFFER_SIZE)
       .setAttr(Fields.CLASS, FieldValues.CLASS_OCEAN)
-      .setMinZoom(6);
+      .setPixelToleranceBelowZoom(10, 0.25)
+      .setMinZoom(0);
   }
 
   @Override
   public void process(Tables.OsmWaterPolygon element, FeatureCollector features) {
     if (!"bay".equals(element.natural())) {
       String clazz = classMapping.getOrElse(element.source(), FieldValues.CLASS_LAKE);
-      features.polygon(LAYER_NAME)
+      FeatureCollector.Feature feature = features.polygon(LAYER_NAME)
         .setBufferPixels(BUFFER_SIZE)
-        .setMinPixelSizeBelowZoom(11, 2)
-        .setMinZoom(6)
-        .setAttr(Fields.ID, element.source().id())
-        .setAttr(Fields.INTERMITTENT, element.isIntermittent() ? 1 : 0)
-        .setAttrWithMinzoom(Fields.BRUNNEL, Utils.brunnel(element.isBridge(), element.isTunnel()), 12)
+        .setMinPixelSize(0)
+        .setPixelToleranceBelowZoom(10, 0.25)
+        .setMinZoom(0)
         .setAttr(Fields.CLASS, clazz);
+      if (element.isIntermittent())
+        feature.setAttr(Fields.INTERMITTENT, 1);
     }
   }
 
   @Override
   public List<VectorTile.Feature> postProcess(int zoom, List<VectorTile.Feature> items) throws GeometryException {
-    return items.size() > 1 ? FeatureMerge.mergeOverlappingPolygons(items, config.minFeatureSize(zoom)) : items;
+    var minArea = zoom <= 10 ? 64 : 64 / Math.pow(2, zoom - 10);
+    return FeatureMerge.mergeNearbyPolygons(items, minArea, minArea, 0.5, 0.25);
   }
 }

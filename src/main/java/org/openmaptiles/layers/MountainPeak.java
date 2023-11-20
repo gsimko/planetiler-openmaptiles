@@ -116,7 +116,6 @@ public class MountainPeak implements
     Double meters = Parse.meters(element.ele());
     if (meters != null && Math.abs(meters) < 10_000) {
       var feature = features.point(LAYER_NAME)
-        .setAttr(Fields.CLASS, element.source().getTag("natural"))
         .putAttrs(OmtLanguageUtils.getNames(element.source().tags(), translations))
         .putAttrs(elevationTags(meters))
         .setSortKeyDescending(
@@ -143,9 +142,9 @@ public class MountainPeak implements
     int rank = 3 -
       (nullIfEmpty(element.wikipedia()) != null ? 1 : 0) -
       (nullIfEmpty(element.name()) != null ? 1 : 0);
+    if (rank == 3)
+      return;
     features.line(LAYER_NAME)
-      .setAttr(Fields.CLASS, element.source().getTag("natural"))
-      .setAttr(Fields.RANK, rank)
       .putAttrs(OmtLanguageUtils.getNames(element.source().tags(), translations))
       .setSortKey(rank)
       .setMinZoom(13)

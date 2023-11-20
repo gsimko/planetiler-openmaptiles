@@ -188,6 +188,7 @@ public class Boundary implements
       features.line(LAYER_NAME).setBufferPixels(BUFFER_SIZE)
         .setZoomRange(info.minzoom, info.maxzoom)
         .setMinPixelSizeAtAllZooms(0)
+        .setPixelToleranceBelowZoom(10, 0.5)
         .setAttr(Fields.ADMIN_LEVEL, info.adminLevel)
         .setAttr(Fields.MARITIME, 0)
         .setAttr(Fields.DISPUTED, disputed ? 1 : 0);
@@ -296,11 +297,10 @@ public class Boundary implements
           features.line(LAYER_NAME).setBufferPixels(BUFFER_SIZE)
             .setAttr(Fields.ADMIN_LEVEL, minAdminLevel)
             .setAttr(Fields.DISPUTED, disputed ? 1 : 0)
-            .setAttr(Fields.MARITIME, maritime ? 1 : 0)
+
             .setMinPixelSizeAtAllZooms(0)
-            .setMinZoom(minzoom)
-            .setAttr(Fields.CLAIMED_BY, claimedBy)
-            .setAttr(Fields.DISPUTED_NAME, editName(disputedName));
+            .setPixelToleranceBelowZoom(10, 0.5)
+            .setMinZoom(minzoom);
         }
       }
     }
@@ -322,25 +322,13 @@ public class Boundary implements
         entry.getValue().clear();
         for (Object merged : merger.getMergedLineStrings()) {
           if (merged instanceof LineString lineString) {
-            BorderingRegions borderingRegions = getBorderingRegions(countryBoundaries, key.regions, lineString);
-
             var features = featureCollectors.get(SimpleFeature.fromWorldGeometry(lineString, key.id));
             var newFeature = features.line(LAYER_NAME).setBufferPixels(BUFFER_SIZE)
               .setAttr(Fields.ADMIN_LEVEL, key.adminLevel)
               .setAttr(Fields.DISPUTED, key.disputed ? 1 : 0)
-              .setAttr(Fields.MARITIME, key.maritime ? 1 : 0)
-              .setAttr(Fields.CLAIMED_BY, key.claimedBy)
-              .setAttr(Fields.DISPUTED_NAME, key.disputed ? editName(key.name) : null)
               .setMinPixelSizeAtAllZooms(0)
+              .setPixelToleranceBelowZoom(10, 0.5)
               .setMinZoom(key.minzoom);
-            if (key.adminLevel == 2 && !key.disputed) {
-              // only non-disputed admin 2 boundaries get to have adm0_{l,r}, at zoom 5 and more
-              newFeature
-                .setAttrWithMinzoom(Fields.ADM0_L,
-                  borderingRegions.left == null ? null : regionNames.get(borderingRegions.left), 5)
-                .setAttrWithMinzoom(Fields.ADM0_R,
-                  borderingRegions.right == null ? null : regionNames.get(borderingRegions.right), 5);
-            }
             for (var feature : features) {
               emit.accept(feature);
             }

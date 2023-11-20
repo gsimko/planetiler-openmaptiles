@@ -109,8 +109,8 @@ public class Park implements
     // park shape
     var outline = features.polygon(LAYER_NAME).setBufferPixels(BUFFER_SIZE)
       .setAttrWithMinzoom(Fields.CLASS, clazz, 5)
-      .setMinPixelSize(2)
-      .setMinZoom(4);
+      .setMinPixelSize(0.5) // 4 device pixels on a retina display
+      .setMinZoom(0);
 
     // park name label point (if it has one)
     if (element.name() != null) {
@@ -126,7 +126,7 @@ public class Park implements
           .setAttr(Fields.CLASS, clazz)
           .putAttrs(names)
           .putAttrs(OmtLanguageUtils.getNames(element.source().tags(), translations))
-          .setPointLabelGridPixelSize(14, 100)
+          .setPointLabelGridPixelSize(13, 100)
           .setSortKey(SortKey
             .orderByTruesFirst("national_park".equals(clazz))
             .thenByTruesFirst(element.source().hasTag("wikipedia") || element.source().hasTag("wikidata"))
@@ -143,7 +143,7 @@ public class Park implements
     // sql filter:    area > 70000*2^(20-zoom_level)
     // simplifies to: zoom_level > 20 - log(area / 70000) / log(2)
     int minzoom = (int) Math.floor(20 - Math.log(area / WORLD_AREA_FOR_70K_SQUARE_METERS) / LOG2);
-    minzoom = Math.clamp(minzoom, 5, 14);
+    minzoom = Math.min(13, Math.max(5, minzoom));
     return minzoom;
   }
 
@@ -158,9 +158,7 @@ public class Park implements
         counts.put(feature.group(), count);
       }
     }
-    if (zoom <= 4) {
-      items = FeatureMerge.mergeOverlappingPolygons(items, 0);
-    }
-    return items;
+    var minArea = zoom <= 10 ? 64 : 64 / Math.pow(2, zoom - 10);
+    return FeatureMerge.mergeNearbyPolygons(items, minArea, minArea, 0.5, 0.25);
   }
 }

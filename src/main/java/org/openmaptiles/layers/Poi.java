@@ -149,7 +149,7 @@ public class Poi implements
   private int minzoom(String subclass, String mappingKey) {
     boolean lowZoom = ("station".equals(subclass) && "railway".equals(mappingKey)) ||
       "halt".equals(subclass) || "ferry_terminal".equals(subclass);
-    return lowZoom ? 12 : 14;
+    return lowZoom ? 12 : 13;
   }
 
   @Override
@@ -159,6 +159,8 @@ public class Poi implements
 
   @Override
   public void process(Tables.OsmPoiPoint element, FeatureCollector features) {
+    if (element.source().tags().get("name") == null)
+      return;
     if (element.uicRef() != null && AGG_STOP_SUBCLASS_ORDER.contains(element.subclass())) {
       // multiple threads may update this concurrently
       String aggStopKey = element.uicRef()
@@ -254,6 +256,8 @@ public class Poi implements
 
   @Override
   public void process(Tables.OsmPoiPolygon element, FeatureCollector features) {
+    if (element.source().tags().get("name") == null)
+      return;
     setupPoiFeature(element, features.centroidIfConvex(LAYER_NAME), null);
   }
 
@@ -302,19 +306,17 @@ public class Poi implements
     int minzoom = minzoom(element.subclass(), element.mappingKey());
     if (UNIVERSITY_POI_SUBCLASSES.contains(rawSubclass)) {
       // universities that are at least 10% of a tile may appear from Z10
-      output.setMinPixelSizeBelowZoom(13, 80); // 80x80px is ~10% of a 256x256px tile
+      // output.setMinPixelSizeBelowZoom(13, 80); // 80x80px is ~10% of a 256x256px tile
       minzoom = 10;
     }
 
     output.setBufferPixels(BUFFER_SIZE)
       .setAttr(Fields.CLASS, poiClass)
-      .setAttr(Fields.SUBCLASS, subclass)
       .setAttr(Fields.LAYER, nullIfLong(element.layer(), 0))
       .setAttr(Fields.LEVEL, Parse.parseLongOrNull(element.source().getTag("level")))
-      .setAttr(Fields.INDOOR, element.indoor() ? 1 : null)
       .setAttr(Fields.AGG_STOP, aggStop)
       .putAttrs(OmtLanguageUtils.getNames(element.source().tags(), translations))
-      .setPointLabelGridPixelSize(14, 64)
+      .setPointLabelGridPixelSize(13, 64)
       .setSortKey(rankOrder)
       .setMinZoom(minzoom);
   }

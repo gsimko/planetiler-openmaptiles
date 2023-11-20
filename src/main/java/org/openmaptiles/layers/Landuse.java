@@ -48,7 +48,6 @@ import com.onthegomap.planetiler.stats.Stats;
 import com.onthegomap.planetiler.util.Parse;
 import com.onthegomap.planetiler.util.Translations;
 import com.onthegomap.planetiler.util.ZoomFunction;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -112,34 +111,22 @@ public class Landuse implements
       var feature = features.polygon(LAYER_NAME).setBufferPixels(BUFFER_SIZE)
         .setAttr(Fields.CLASS, clazz)
         .setMinZoom(Z6_CLASSES.contains(clazz) ? 6 : 9);
-      if (FieldValues.CLASS_RESIDENTIAL.equals(clazz)) {
-        feature
-          .setMinPixelSize(0.1)
-          .setPixelTolerance(0.25);
-      } else {
-        feature
-          .setMinPixelSizeOverrides(MIN_PIXEL_SIZE_THRESHOLDS);
-      }
+      // if (FieldValues.CLASS_RESIDENTIAL.equals(clazz)) {
+      //   feature
+      //     .setMinPixelSize(0.5)  // 4 device pixels on a retina display
+      //     .setPixelTolerance(0.25);
+      // } else {
+      feature
+        .setMinPixelSize(0.1)
+        .setPixelToleranceBelowZoom(12, 0.25);
+      // }
     }
   }
 
   @Override
   public List<VectorTile.Feature> postProcess(int zoom,
     List<VectorTile.Feature> items) throws GeometryException {
-    List<VectorTile.Feature> toMerge = new ArrayList<>();
-    List<VectorTile.Feature> result = new ArrayList<>();
-    for (var item : items) {
-      if (FieldValues.CLASS_RESIDENTIAL.equals(item.attrs().get(Fields.CLASS))) {
-        toMerge.add(item);
-      } else {
-        result.add(item);
-      }
-    }
-    var merged = zoom <= 12 ?
-      FeatureMerge.mergeNearbyPolygons(toMerge, 1, 1, 0.1, 0.1) :
-      // reduces size of some heavy z13-14 tiles with lots of small polygons
-      FeatureMerge.mergeMultiPolygon(toMerge);
-    result.addAll(merged);
-    return result;
+    var minArea = zoom <= 10 ? 64 : 64 / Math.pow(2, zoom - 10);
+    return FeatureMerge.mergeNearbyPolygons(items, minArea, minArea, 0.5, 0.25);
   }
 }

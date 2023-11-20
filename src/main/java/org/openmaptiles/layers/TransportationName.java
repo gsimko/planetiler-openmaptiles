@@ -36,8 +36,6 @@ See https://github.com/openmaptiles/openmaptiles/blob/master/LICENSE.md for deta
 package org.openmaptiles.layers;
 
 import static org.openmaptiles.layers.Transportation.highwayClass;
-import static org.openmaptiles.layers.Transportation.highwaySubclass;
-import static org.openmaptiles.layers.Transportation.isFootwayOrSteps;
 import static org.openmaptiles.util.Utils.*;
 
 import com.carrotsearch.hppc.LongArrayList;
@@ -52,15 +50,12 @@ import com.onthegomap.planetiler.collection.Hppc;
 import com.onthegomap.planetiler.config.PlanetilerConfig;
 import com.onthegomap.planetiler.reader.osm.OsmElement;
 import com.onthegomap.planetiler.stats.Stats;
-import com.onthegomap.planetiler.util.Parse;
 import com.onthegomap.planetiler.util.Translations;
 import com.onthegomap.planetiler.util.ZoomFunction;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import org.openmaptiles.OpenMapTilesProfile;
 import org.openmaptiles.generated.OpenMapTilesSchema;
@@ -79,6 +74,7 @@ public class TransportationName implements
   OpenMapTilesSchema.TransportationName,
   Tables.OsmHighwayPoint.Handler,
   Tables.OsmHighwayLinestring.Handler,
+  Tables.OsmHighwayPolygon.Handler,
   Tables.OsmAerialwayLinestring.Handler,
   Tables.OsmShipwayLinestring.Handler,
   OpenMapTilesProfile.FeaturePostProcessor,
@@ -201,8 +197,6 @@ public class TransportationName implements
           .setAttr(Fields.REF, ref)
           .setAttr(Fields.REF_LENGTH, ref != null ? ref.length() : null)
           .setAttr(Fields.CLASS, highwayClass(cls.highwayValue, null, null, null))
-          .setAttr(Fields.SUBCLASS, subclass)
-          .setAttr(Fields.LAYER, nullIfLong(element.layer(), 0))
           .setSortKeyDescending(element.zOrder())
           .setMinZoom(10);
       }
@@ -234,17 +228,29 @@ public class TransportationName implements
     String name = nullIfEmpty(element.name());
     ref = nullIfEmpty(ref);
     String highway = nullIfEmpty(element.highway());
+    boolean isActivity = nullIfEmpty(element.bicycle()) != null ||
+      nullIfEmpty(element.foot()) != null ||
+      nullIfEmpty(element.horse()) != null ||
+      nullIfEmpty(element.mtbScale()) != null ||
+      nullIfEmpty(element.mtbScaleImba()) != null ||
+      nullIfEmpty(element.mtbScaleUphill()) != null ||
+      nullIfEmpty(element.ski()) != null ||
+      nullIfEmpty(element.pisteType()) != null ||
+      nullIfEmpty(element.pisteDifficulty()) != null;
 
     String highwayClass = highwayClass(element.highway(), null, element.construction(), element.manMade());
-    if (element.isArea() || highway == null || highwayClass == null || (name == null && ref == null)) {
+
+    if ((name == null && ref == null) || element.isArea() ||
+      (!isActivity && (highway == null || highwayClass == null))) {
       return;
     }
 
     boolean isLink = Transportation.isLink(highway);
-    String baseClass = highwayClass.replace("_construction", "");
+    String baseClass = highwayClass == null ? null : highwayClass.replace("_construction", "");
 
     int minzoom = FieldValues.CLASS_TRUNK.equals(baseClass) ? 8 :
       FieldValues.CLASS_MOTORWAY.equals(baseClass) ? 6 :
+      FieldValues.CLASS_PRIMARY.equals(baseClass) ? 11 :
       isLink ? 13 : 12; // fallback - get from line minzoom, but floor at 12
 
     // inherit min zoom threshold from visible road, and ensure we never show a label on a road that's not visible yet.
@@ -263,20 +269,15 @@ public class TransportationName implements
       .setAttr(Fields.NETWORK,
         firstRelationWithNetwork != null ? firstRelationWithNetwork.networkType().name : !nullOrEmpty(ref) ? "road" :
           null)
+      .setAttr(Fields.MTB_SCALE, nullIfEmpty(element.mtbScale()))
+      .setAttr(Fields.MTB_SCALE_IMBA, nullIfEmpty(element.mtbScaleImba()))
+      .setAttr(Fields.MTB_SCALE_UPHILL, nullIfEmpty(element.mtbScaleUphill()))
+      .setAttr(Fields.PISTE_TYPE, nullIfEmpty(element.pisteType()))
+      .setAttr(Fields.PISTE_DIFFICULTY, nullIfEmpty(element.pisteDifficulty()))
       .setAttr(Fields.CLASS, highwayClass)
-      .setAttr(Fields.SUBCLASS, highwaySubclass(highwayClass, null, highway))
       .setMinPixelSize(0)
       .setSortKey(element.zOrder())
       .setMinZoom(minzoom);
-
-    // populate route_1, route_2, ... route_n tags and remove duplicates
-    Set<String> routes = new HashSet<>();
-    for (var route : relations) {
-      String routeString = route.network() + "=" + coalesce(route.ref(), "");
-      if (routes.add(routeString)) {
-        feature.setAttr("route_" + routes.size(), routeString);
-      }
-    }
 
     if (brunnel) {
       // from OMT: "Drop brunnel if length of way < 2% of tile width (less than 3 pixels)"
@@ -294,13 +295,6 @@ public class TransportationName implements
         .setAttr(LINK_TEMP_KEY, isLink ? 1 : 0)
         .setAttr(RELATION_ID_TEMP_KEY, firstRelationWithNetwork == null ? null : firstRelationWithNetwork.id());
     }
-
-    if (isFootwayOrSteps(highway)) {
-      feature
-        .setAttrWithMinzoom(Fields.LAYER, nullIfLong(element.layer(), 0), 12)
-        .setAttrWithMinzoom(Fields.LEVEL, Parse.parseLongOrNull(element.source().getTag("level")), 12)
-        .setAttrWithMinzoom(Fields.INDOOR, element.indoor() ? 1 : null, 12);
-    }
   }
 
   @Override
@@ -311,7 +305,6 @@ public class TransportationName implements
         .setBufferPixelOverrides(MIN_LENGTH)
         .putAttrs(OmtLanguageUtils.getNames(element.source().tags(), translations))
         .setAttr(Fields.CLASS, "aerialway")
-        .setAttr(Fields.SUBCLASS, element.aerialway())
         .setMinPixelSize(0)
         .setSortKey(element.zOrder())
         .setMinZoom(12);
@@ -328,8 +321,34 @@ public class TransportationName implements
         .setAttr(Fields.CLASS, element.shipway())
         .setMinPixelSize(0)
         .setSortKey(element.zOrder())
-        .setMinZoom(12);
+        .setMinZoom(10);
     }
+  }
+
+  @Override
+  public void process(Tables.OsmHighwayPolygon element, FeatureCollector features) {
+    if (nullOrEmpty(element.name()))
+      return;
+
+    boolean isActivity =
+      nullIfEmpty(element.bicycle()) != null ||
+        nullIfEmpty(element.foot()) != null ||
+        nullIfEmpty(element.horse()) != null ||
+        nullIfEmpty(element.mtbScale()) != null ||
+        nullIfEmpty(element.mtbScaleImba()) != null ||
+        nullIfEmpty(element.mtbScaleUphill()) != null ||
+        nullIfEmpty(element.ski()) != null ||
+        nullIfEmpty(element.pisteType()) != null ||
+        nullIfEmpty(element.pisteDifficulty()) != null;
+    if (!isActivity)
+      return;
+
+    features.pointOnSurface(LAYER_NAME)
+      .setBufferPixels(BUFFER_SIZE)
+      .putAttrs(OmtLanguageUtils.getNames(element.source().tags(), translations))
+      .setMinPixelSize(0)
+      .setSortKey(element.zOrder())
+      .setMinZoom(12);
   }
 
   @Override
@@ -342,7 +361,7 @@ public class TransportationName implements
     // z8: (tolerance: 120)
     // z9-11: (tolerance: 50)
     Function<Map<String, Object>, Double> lengthLimitCalculator =
-      zoom >= 14 ? (p -> 0d) :
+      zoom >= 13 ? (p -> 0d) :
         minLength > 0 ? (p -> minLength) :
         this::getMinLengthForName;
     var result = FeatureMerge.mergeLineStrings(items, lengthLimitCalculator, tolerance, BUFFER_SIZE);
