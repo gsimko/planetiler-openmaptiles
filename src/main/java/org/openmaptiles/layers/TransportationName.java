@@ -279,6 +279,8 @@ public class TransportationName implements
       .setSortKey(element.zOrder())
       .setMinZoom(minzoom);
 
+    transportation.addCountryForMtbSki(element, feature);
+
     if (brunnel) {
       // from OMT: "Drop brunnel if length of way < 2% of tile width (less than 3 pixels)"
       feature.setAttrWithMinSize(Fields.BRUNNEL, brunnel(element.isBridge(), element.isTunnel(), element.isFord()),

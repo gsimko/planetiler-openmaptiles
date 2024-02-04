@@ -35,6 +35,8 @@ See https://github.com/openmaptiles/openmaptiles/blob/master/LICENSE.md for deta
 */
 package org.openmaptiles.layers;
 
+import java.util.ArrayList;
+import java.util.List;
 import static com.onthegomap.planetiler.util.MemoryEstimator.CLASS_HEADER_BYTES;
 import static com.onthegomap.planetiler.util.MemoryEstimator.POINTER_BYTES;
 import static com.onthegomap.planetiler.util.MemoryEstimator.estimateSize;
@@ -172,6 +174,9 @@ public class Transportation implements
   private PreparedGeometry ireland = null;
   // private final Translations translations;
 
+  private List<String> countryNames = new ArrayList<>();
+  private List<PreparedGeometry> countries = new ArrayList<>();
+
   public Transportation(Translations translations, PlanetilerConfig config, Stats stats) {
     this.config = config;
     this.stats = stats;
@@ -280,6 +285,22 @@ public class Transportation implements
         }
       } catch (GeometryException e) {
         LOGGER.error("Failed to get Ireland Polygon: " + e);
+      }
+    }
+    
+    var iso = feature.getTag("iso_a2");
+    if (iso != null) {
+      try {
+        var prepared = PreparedGeometryFactory.prepare(
+          feature.polygon().buffer(GeoUtils.metersToPixelAtEquator(0, 10_000) / 256d)
+        );
+        synchronized (this) {
+          countryNames.add(iso.toString());
+          countries.add(prepared);
+
+        }
+      } catch (GeometryException e) {
+        LOGGER.error("Failed to get " + iso + " Polygon: " + e);
       }
     }
   }
@@ -475,6 +496,46 @@ public class Transportation implements
         .setMinPixelSize(0) // merge during post-processing, then limit by size
         .setSortKey(element.zOrder())
         .setMinZoom(minzoom);
+
+      addCountryForMtbSki(element, feature);
+    }
+  }
+
+  void addCountryForMtbSki(Tables.OsmHighwayLinestring element, FeatureCollector.Feature feature) {
+    if (nullOrEmpty(element.mtbScale()) &&
+        nullOrEmpty(element.mtbScaleImba()) &&
+        nullOrEmpty(element.mtbScaleUphill()) &&
+        nullOrEmpty(element.pisteDifficulty())) return;
+    try {
+      Geometry geometry = element.source().worldGeometry();
+      for (int i = 0; i < countries.size(); i++) {
+        if (countries.get(i).intersects(geometry)) {
+          feature.setAttrWithMinzoom("country", countryNames.get(i), 9);
+          break;
+        }
+      }  
+    } catch (GeometryException e) {
+      e.log(stats, "transportation_country",
+        "Unable to get country for polygon: " + element.source().id());
+    }
+  }
+
+  void addCountryForMtbSki(Tables.OsmHighwayPolygon element, FeatureCollector.Feature feature) {
+    if (nullOrEmpty(element.mtbScale()) &&
+        nullOrEmpty(element.mtbScaleImba()) &&
+        nullOrEmpty(element.mtbScaleUphill()) &&
+        nullOrEmpty(element.pisteDifficulty())) return;
+    try {
+      Geometry geometry = element.source().worldGeometry();
+      for (int i = 0; i < countries.size(); i++) {
+        if (countries.get(i).intersects(geometry)) {
+          feature.setAttrWithMinzoom("country", countryNames.get(i), 9);
+          break;
+        }
+      }  
+    } catch (GeometryException e) {
+      e.log(stats, "transportation_country",
+        "Unable to get country for polygon: " + element.source().id());
     }
   }
 
@@ -617,7 +678,7 @@ public class Transportation implements
       (!element.source().canBeLine() && element.layer() >= 0)) {
       String highwayClass = highwayClass(element.highway(), element.publicTransport(), null, element.manMade());
       if (highwayClass != null || isActivity) {
-        features.polygon(LAYER_NAME).setBufferPixels(BUFFER_SIZE)
+        var feature = features.polygon(LAYER_NAME).setBufferPixels(BUFFER_SIZE)
           // .putAttrs(OmtLanguageUtils.getNames(element.source().tags(), translations))
           .setAttr(Fields.CLASS, highwayClass)
           .setAttr(Fields.BRUNNEL, brunnel("bridge".equals(manMade), false, false))
@@ -629,6 +690,8 @@ public class Transportation implements
           .setAttr(Fields.PISTE_DIFFICULTY, nullIfEmpty(element.pisteDifficulty()))
           .setSortKey(element.zOrder())
           .setMinZoom(minzoom);
+
+        addCountryForMtbSki(element, feature);
       }
     }
   }
