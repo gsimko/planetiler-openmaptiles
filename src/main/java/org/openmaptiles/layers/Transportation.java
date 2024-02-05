@@ -35,8 +35,6 @@ See https://github.com/openmaptiles/openmaptiles/blob/master/LICENSE.md for deta
 */
 package org.openmaptiles.layers;
 
-import java.util.ArrayList;
-import java.util.List;
 import static com.onthegomap.planetiler.util.MemoryEstimator.CLASS_HEADER_BYTES;
 import static com.onthegomap.planetiler.util.MemoryEstimator.POINTER_BYTES;
 import static com.onthegomap.planetiler.util.MemoryEstimator.estimateSize;
@@ -187,17 +185,17 @@ public class Transportation implements
       false
     );
     MINZOOMS = Map.ofEntries(
-      entry(FieldValues.CLASS_PATH, 12),
+      entry(FieldValues.CLASS_PATH, 11),
       entry(FieldValues.CLASS_TRACK, 12),
-      entry(FieldValues.CLASS_SERVICE, 13),
-      entry(FieldValues.CLASS_MINOR, 13),
+      entry(FieldValues.CLASS_SERVICE, 12),
+      entry(FieldValues.CLASS_MINOR, 12),
       entry(FieldValues.CLASS_RACEWAY, 12),
-      entry(FieldValues.CLASS_TERTIARY, 11),
+      entry(FieldValues.CLASS_TERTIARY, 10),
       entry(FieldValues.CLASS_BUSWAY, 11),
       entry(FieldValues.CLASS_BUS_GUIDEWAY, 11),
       entry(FieldValues.CLASS_SECONDARY, 9),
       entry(FieldValues.CLASS_PRIMARY, 7),
-      entry(FieldValues.CLASS_TRUNK, 5),
+      entry(FieldValues.CLASS_TRUNK, 7),
       entry(FieldValues.CLASS_MOTORWAY, 4)
     );
   }
