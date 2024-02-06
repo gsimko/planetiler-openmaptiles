@@ -185,11 +185,11 @@ public class Transportation implements
       false
     );
     MINZOOMS = Map.ofEntries(
-      entry(FieldValues.CLASS_PATH, 11),
-      entry(FieldValues.CLASS_TRACK, 12),
-      entry(FieldValues.CLASS_SERVICE, 12),
-      entry(FieldValues.CLASS_MINOR, 12),
-      entry(FieldValues.CLASS_RACEWAY, 12),
+      entry(FieldValues.CLASS_PATH, 13),
+      entry(FieldValues.CLASS_TRACK, 13),
+      entry(FieldValues.CLASS_SERVICE, 13),
+      entry(FieldValues.CLASS_MINOR, 13),
+      entry(FieldValues.CLASS_RACEWAY, 13),
       entry(FieldValues.CLASS_TERTIARY, 10),
       entry(FieldValues.CLASS_BUSWAY, 11),
       entry(FieldValues.CLASS_BUS_GUIDEWAY, 11),
@@ -538,20 +538,36 @@ public class Transportation implements
   }
 
   boolean isActivityPath(Tables.OsmHighwayLinestring element) {
-    return nullIfEmpty(element.bicycle()) != null ||
-      nullIfEmpty(element.foot()) != null ||
-      nullIfEmpty(element.horse()) != null ||
-      nullIfEmpty(element.mtbScale()) != null ||
-      nullIfEmpty(element.mtbScaleImba()) != null ||
-      nullIfEmpty(element.mtbScaleUphill()) != null ||
-      nullIfEmpty(element.ski()) != null ||
-      nullIfEmpty(element.pisteType()) != null ||
-      nullIfEmpty(element.pisteDifficulty()) != null;
+    return 
+      element.bicycle() == "designated" ||
+      element.bicycle() == "yes" ||
+      element.horse() == "designated" ||
+      element.horse() == "yes" ||
+      !nullOrEmpty(element.mtbScale()) ||
+      !nullOrEmpty(element.mtbScaleImba()) ||
+      !nullOrEmpty(element.mtbScaleUphill()) ||
+      !nullOrEmpty(element.ski()) ||
+      !nullOrEmpty(element.pisteType()) ||
+      !nullOrEmpty(element.pisteDifficulty());
+  }
+
+  boolean isActivityPath(Tables.OsmHighwayPolygon element) {
+    return 
+      element.bicycle() == "designated" ||
+      element.bicycle() == "yes" ||
+      element.horse() == "designated" ||
+      element.horse() == "yes" ||
+      !nullOrEmpty(element.mtbScale()) ||
+      !nullOrEmpty(element.mtbScaleImba()) ||
+      !nullOrEmpty(element.mtbScaleUphill()) ||
+      !nullOrEmpty(element.ski()) ||
+      !nullOrEmpty(element.pisteType()) ||
+      !nullOrEmpty(element.pisteDifficulty());
   }
 
   int getMinzoom(Tables.OsmHighwayLinestring element, String highwayClass) {
+    if (isActivityPath(element)) return 10;
     if (highwayClass == null) {
-      if (isActivityPath(element)) return 9;
       return Integer.MAX_VALUE;
     }
 
@@ -568,7 +584,7 @@ public class Transportation implements
     if ("pier".equals(element.manMade())) {
       minzoom = 13;
     } else if (isResidentialOrUnclassified(highway)) {
-      minzoom = 12;
+      minzoom = 13;
     } else {
       String baseClass = highwayClass.replace("_construction", "");
       minzoom = MINZOOMS.getOrDefault(baseClass, Integer.MAX_VALUE);
@@ -657,16 +673,7 @@ public class Transportation implements
   @Override
   public void process(Tables.OsmHighwayPolygon element, FeatureCollector features) {
     String manMade = element.manMade();
-    boolean isActivity =
-      nullIfEmpty(element.bicycle()) != null ||
-        nullIfEmpty(element.foot()) != null ||
-        nullIfEmpty(element.horse()) != null ||
-        nullIfEmpty(element.mtbScale()) != null ||
-        nullIfEmpty(element.mtbScaleImba()) != null ||
-        nullIfEmpty(element.mtbScaleUphill()) != null ||
-        nullIfEmpty(element.ski()) != null ||
-        nullIfEmpty(element.pisteType()) != null ||
-        nullIfEmpty(element.pisteDifficulty()) != null;
+    boolean isActivity = isActivityPath(element);
 
     int minzoom = isActivity ? 9 : 13;
 

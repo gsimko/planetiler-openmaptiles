@@ -36,7 +36,10 @@ See https://github.com/openmaptiles/openmaptiles/blob/master/LICENSE.md for deta
 package org.openmaptiles.layers;
 
 import static org.openmaptiles.layers.Transportation.highwayClass;
-import static org.openmaptiles.util.Utils.*;
+import static org.openmaptiles.util.Utils.brunnel;
+import static org.openmaptiles.util.Utils.coalesce;
+import static org.openmaptiles.util.Utils.nullIfEmpty;
+import static org.openmaptiles.util.Utils.nullOrEmpty;
 
 import com.carrotsearch.hppc.LongArrayList;
 import com.carrotsearch.hppc.LongByteMap;
@@ -332,17 +335,7 @@ public class TransportationName implements
     if (nullOrEmpty(element.name()))
       return;
 
-    boolean isActivity =
-      nullIfEmpty(element.bicycle()) != null ||
-        nullIfEmpty(element.foot()) != null ||
-        nullIfEmpty(element.horse()) != null ||
-        nullIfEmpty(element.mtbScale()) != null ||
-        nullIfEmpty(element.mtbScaleImba()) != null ||
-        nullIfEmpty(element.mtbScaleUphill()) != null ||
-        nullIfEmpty(element.ski()) != null ||
-        nullIfEmpty(element.pisteType()) != null ||
-        nullIfEmpty(element.pisteDifficulty()) != null;
-    if (!isActivity)
+    if (!transportation.isActivityPath(element))
       return;
 
     features.pointOnSurface(LAYER_NAME)

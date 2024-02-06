@@ -127,7 +127,7 @@ public class Water implements
 
   @Override
   public List<VectorTile.Feature> postProcess(int zoom, List<VectorTile.Feature> items) throws GeometryException {
-    var minArea = zoom <= 10 ? 64 : 64 / Math.pow(2, zoom - 10);
+    var minArea = zoom <= 10 ? Math.max(4, 64 / Math.pow(2, 10-zoom)) : 64 / Math.pow(2, zoom - 10);
     return FeatureMerge.mergeNearbyPolygons(items, minArea, minArea, 0.5, 0.25);
   }
 }
