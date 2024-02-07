@@ -455,7 +455,6 @@ public class Transportation implements
       int minzoom = getMinzoom(element, highwayClass);
       if (isActivity && minzoom > 10) minzoom = 10;
     
-
       if (minzoom > config.maxzoom()) {
         return;
       }
@@ -542,10 +541,10 @@ public class Transportation implements
 
   boolean isActivityPath(Tables.OsmHighwayLinestring element) {
     return 
-      element.bicycle().equals("designated") ||
-      element.bicycle().equals("yes") ||
-      element.horse().equals("designated") ||
-      element.horse().equals("yes") ||
+      (element.bicycle() != null && element.bicycle().equals("designated")) ||
+      (element.bicycle() != null && element.bicycle().equals("yes")) ||
+      (element.horse() != null && element.horse().equals("designated")) ||
+      (element.horse() != null && element.horse().equals("yes")) ||
       !nullOrEmpty(element.mtbScale()) ||
       !nullOrEmpty(element.mtbScaleImba()) ||
       !nullOrEmpty(element.mtbScaleUphill()) ||
@@ -556,10 +555,10 @@ public class Transportation implements
 
   boolean isActivityPath(Tables.OsmHighwayPolygon element) {
     return 
-      element.bicycle().equals("designated") ||
-      element.bicycle().equals("yes") ||
-      element.horse().equals("designated") ||
-      element.horse().equals("yes") ||
+      (element.bicycle() != null && element.bicycle().equals("designated")) ||
+      (element.bicycle() != null && element.bicycle().equals("yes")) ||
+      (element.horse() != null && element.horse().equals("designated")) ||
+      (element.horse() != null && element.horse().equals("yes")) ||
       !nullOrEmpty(element.mtbScale()) ||
       !nullOrEmpty(element.mtbScaleImba()) ||
       !nullOrEmpty(element.mtbScaleUphill()) ||
