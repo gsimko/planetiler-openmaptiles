@@ -231,15 +231,7 @@ public class TransportationName implements
     String name = nullIfEmpty(element.name());
     ref = nullIfEmpty(ref);
     String highway = nullIfEmpty(element.highway());
-    boolean isActivity = nullIfEmpty(element.bicycle()) != null ||
-      nullIfEmpty(element.foot()) != null ||
-      nullIfEmpty(element.horse()) != null ||
-      nullIfEmpty(element.mtbScale()) != null ||
-      nullIfEmpty(element.mtbScaleImba()) != null ||
-      nullIfEmpty(element.mtbScaleUphill()) != null ||
-      nullIfEmpty(element.ski()) != null ||
-      nullIfEmpty(element.pisteType()) != null ||
-      nullIfEmpty(element.pisteDifficulty()) != null;
+    boolean isActivity = transportation.isActivityPath(element);
 
     String highwayClass = highwayClass(element.highway(), null, element.construction(), element.manMade());
 
@@ -258,6 +250,7 @@ public class TransportationName implements
 
     // inherit min zoom threshold from visible road, and ensure we never show a label on a road that's not visible yet.
     minzoom = Math.max(minzoom, transportation.getMinzoom(element, highwayClass));
+    if (isActivity && minzoom > 10) minzoom = 10;
     if (minzoom > config.maxzoom()) {
       return;
     }

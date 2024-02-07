@@ -447,11 +447,14 @@ public class Transportation implements
       element.manMade());
     // String baseClass = highwayClass == null ? null : highwayClass.replace("_construction", "");
     String service = service(element.service());
-    if (highwayClass != null || isActivityPath(element)) {
+    boolean isActivity = isActivityPath(element);
+    if (highwayClass != null || isActivity) {
       if (isPierPolygon(element)) {
         return;
       }
       int minzoom = getMinzoom(element, highwayClass);
+      if (isActivity && minzoom > 10) minzoom = 10;
+    
 
       if (minzoom > config.maxzoom()) {
         return;
@@ -539,10 +542,10 @@ public class Transportation implements
 
   boolean isActivityPath(Tables.OsmHighwayLinestring element) {
     return 
-      element.bicycle() == "designated" ||
-      element.bicycle() == "yes" ||
-      element.horse() == "designated" ||
-      element.horse() == "yes" ||
+      element.bicycle().equals("designated") ||
+      element.bicycle().equals("yes") ||
+      element.horse().equals("designated") ||
+      element.horse().equals("yes") ||
       !nullOrEmpty(element.mtbScale()) ||
       !nullOrEmpty(element.mtbScaleImba()) ||
       !nullOrEmpty(element.mtbScaleUphill()) ||
@@ -553,10 +556,10 @@ public class Transportation implements
 
   boolean isActivityPath(Tables.OsmHighwayPolygon element) {
     return 
-      element.bicycle() == "designated" ||
-      element.bicycle() == "yes" ||
-      element.horse() == "designated" ||
-      element.horse() == "yes" ||
+      element.bicycle().equals("designated") ||
+      element.bicycle().equals("yes") ||
+      element.horse().equals("designated") ||
+      element.horse().equals("yes") ||
       !nullOrEmpty(element.mtbScale()) ||
       !nullOrEmpty(element.mtbScaleImba()) ||
       !nullOrEmpty(element.mtbScaleUphill()) ||
@@ -566,7 +569,6 @@ public class Transportation implements
   }
 
   int getMinzoom(Tables.OsmHighwayLinestring element, String highwayClass) {
-    if (isActivityPath(element)) return 10;
     if (highwayClass == null) {
       return Integer.MAX_VALUE;
     }
