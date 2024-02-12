@@ -272,6 +272,8 @@ public class TransportationName implements
       .setAttr(Fields.PISTE_DIFFICULTY, nullIfEmpty(element.pisteDifficulty()))
       .setAttr(Fields.CLASS, highwayClass)
       .setMinPixelSize(0)
+      .setPixelTolerance(1)
+      .setPixelToleranceAtMaxZoom(0.25)
       .setSortKey(element.zOrder())
       .setMinZoom(minzoom);
 
@@ -304,6 +306,8 @@ public class TransportationName implements
         .putAttrs(OmtLanguageUtils.getNames(element.source().tags(), translations))
         .setAttr(Fields.CLASS, "aerialway")
         .setMinPixelSize(0)
+        .setPixelTolerance(1)
+        .setPixelToleranceAtMaxZoom(0.25)
         .setSortKey(element.zOrder())
         .setMinZoom(12);
     }
@@ -318,6 +322,8 @@ public class TransportationName implements
         .putAttrs(OmtLanguageUtils.getNames(element.source().tags(), translations))
         .setAttr(Fields.CLASS, element.shipway())
         .setMinPixelSize(0)
+        .setPixelTolerance(1)
+        .setPixelToleranceAtMaxZoom(0.25)
         .setSortKey(element.zOrder())
         .setMinZoom(10);
     }
@@ -335,6 +341,8 @@ public class TransportationName implements
       .setBufferPixels(BUFFER_SIZE)
       .putAttrs(OmtLanguageUtils.getNames(element.source().tags(), translations))
       .setMinPixelSize(0)
+      .setPixelTolerance(1)
+      .setPixelToleranceAtMaxZoom(0.25)
       .setSortKey(element.zOrder())
       .setMinZoom(12);
   }

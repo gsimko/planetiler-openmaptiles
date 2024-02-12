@@ -73,6 +73,8 @@ public class AerodromeLabel implements
       .setBufferPixels(BUFFER_SIZE)
       .setMinZoom(important ? 8 : 10)
       .putAttrs(OmtLanguageUtils.getNames(element.source().tags(), translations))
-      .setAttr(Fields.CLASS, clazz);
+      .setAttr(Fields.CLASS, clazz)
+      .setPixelTolerance(1)
+      .setPixelToleranceAtMaxZoom(0.25);
   }
 }
